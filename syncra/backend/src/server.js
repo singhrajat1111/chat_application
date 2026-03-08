@@ -11,7 +11,7 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import logger from './utils/logger.js';
 
-import pool, { testConnection } from './db/index.js';
+import pool, { testConnection, initializeSchema } from './db/index.js';
 import redisService from './config/redis.js';
 import { authenticateSocket } from './middleware/auth.js';
 import { setupSocketHandlers, subscribeToRedis } from './sockets/index.js';
@@ -138,6 +138,10 @@ const startServer = async () => {
       logger.error('Failed to connect to database. Exiting...');
       process.exit(1);
     }
+
+    // Initialize database schema (safe — uses IF NOT EXISTS)
+    logger.info('Initializing database schema...');
+    await initializeSchema();
 
     // Connect to Redis
     logger.info('Connecting to Redis...');

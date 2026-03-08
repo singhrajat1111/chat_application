@@ -67,4 +67,19 @@ export const testConnection = async () => {
   }
 };
 
+// Initialize schema (runs CREATE IF NOT EXISTS — safe to call every startup)
+export const initializeSchema = async () => {
+  const { readFileSync } = await import('fs');
+  const { fileURLToPath } = await import('url');
+  const { dirname, join } = await import('path');
+
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const schemaPath = join(__dirname, 'schema.sql');
+
+  const schema = readFileSync(schemaPath, 'utf8');
+  await pool.query(schema);
+  logger.info('Database schema initialized');
+};
+
 export default pool;
