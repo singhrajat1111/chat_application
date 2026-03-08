@@ -110,9 +110,9 @@ const ChatArea = () => {
   const isOnline = isUserOnline(otherUser?.id);
 
   return (
-    <div className="flex-1 flex flex-col bg-surface-50 dark:bg-surface-950">
+    <div className="flex-1 flex flex-col bg-surface-50 dark:bg-surface-950 dark-gradient-bg">
       {/* Header */}
-      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800">
+      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-surface-900/95 border-b border-surface-200 dark:border-surface-700/50 backdrop-blur-sm">
         <div className="flex items-center gap-4">
           {/* Back button (mobile) */}
           <button
@@ -135,7 +135,7 @@ const ChatArea = () => {
                 {getInitials(otherUser?.username)}
               </div>
               {isOnline && (
-                <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-surface-900 rounded-full" />
+                <span className="absolute bottom-0 right-0 w-3 h-3 bg-accent-400 border-2 border-white dark:border-surface-900 rounded-full" />
               )}
             </div>
             <div>
@@ -207,7 +207,7 @@ const ChatArea = () => {
       </div>
 
       {/* Input area */}
-      <div className="px-4 sm:px-6 lg:px-8 py-4 bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-800">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 bg-white dark:bg-surface-900/95 border-t border-surface-200 dark:border-surface-700/50 backdrop-blur-sm">
         <div className="max-w-3xl mx-auto">
           <form onSubmit={handleSubmit} className="flex items-end gap-3">
             <button
@@ -228,14 +228,14 @@ const ChatArea = () => {
                 onKeyDown={handleKeyDown}
                 onBlur={stopTyping}
                 placeholder="Type a message..."
-                className="w-full px-4 py-3 bg-surface-100 dark:bg-surface-800 border-0 rounded-xl text-surface-900 dark:text-white placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all"
+                className="w-full px-4 py-3 bg-surface-100 dark:bg-surface-800 border border-transparent dark:border-surface-700/50 rounded-xl text-surface-900 dark:text-white placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark-glow-focus transition-all"
               />
             </div>
 
             <button
               type="submit"
               disabled={!inputValue.trim() || isSending}
-              className="p-3 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary-600 text-white rounded-xl transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+              className="p-3 btn-gradient disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
             >
               {isSending ? (
                 <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">

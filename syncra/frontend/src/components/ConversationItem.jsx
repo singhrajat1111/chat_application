@@ -8,8 +8,8 @@ const ConversationItem = ({ conversation, isActive, onClick, isOnline }) => {
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left ${
         isActive
-          ? 'bg-primary-50 dark:bg-primary-900/20'
-          : 'hover:bg-surface-100 dark:hover:bg-surface-800/50'
+          ? 'bg-primary-50 dark:bg-primary-900/20 border border-primary-200/50 dark:border-primary-700/30'
+          : 'hover:bg-surface-100 dark:hover:bg-surface-800/50 border border-transparent'
       }`}
     >
       {/* Avatar */}
@@ -66,7 +66,7 @@ const ConversationItem = ({ conversation, isActive, onClick, isOnline }) => {
           </p>
 
           {unreadCount > 0 && (
-            <span className="flex-shrink-0 min-w-[20px] h-5 px-1.5 bg-primary-600 text-white text-xs font-medium rounded-full flex items-center justify-center">
+            <span className="flex-shrink-0 min-w-[20px] h-5 px-1.5 bg-gradient-to-r from-primary-600 to-primary-500 text-white text-xs font-medium rounded-full flex items-center justify-center shadow-sm shadow-primary-600/20">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}

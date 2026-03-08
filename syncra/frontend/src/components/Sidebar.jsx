@@ -68,12 +68,12 @@ const Sidebar = () => {
   const showSearchResults = searchQuery.length >= 2;
 
   return (
-    <div className="w-full lg:w-80 h-full bg-white dark:bg-surface-900 border-r border-surface-200 dark:border-surface-800 flex flex-col">
+    <div className="w-full lg:w-80 h-full bg-white dark:bg-surface-900/95 border-r border-surface-200 dark:border-surface-700/50 flex flex-col backdrop-blur-sm">
       {/* Header */}
       <div className="p-4 border-b border-surface-200 dark:border-surface-800">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-600/20">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
@@ -96,7 +96,7 @@ const Sidebar = () => {
             </button>
 
             {showUserMenu && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-surface-800 rounded-xl shadow-xl border border-surface-200 dark:border-surface-700 py-2 z-50 animate-fade-in">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-surface-800 rounded-xl shadow-xl border border-surface-200 dark:border-surface-700/50 py-2 z-50 animate-fade-in">
                 <div className="px-4 py-2 border-b border-surface-200 dark:border-surface-700">
                   <p className="font-medium text-surface-900 dark:text-white">{user?.username}</p>
                   <p className="text-sm text-surface-500 dark:text-surface-400">{user?.email}</p>
@@ -147,7 +147,7 @@ const Sidebar = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search users..."
-            className="w-full pl-10 pr-4 py-2.5 bg-surface-100 dark:bg-surface-800 border-0 rounded-xl text-surface-900 dark:text-white placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-surface-100 dark:bg-surface-800 border border-transparent dark:border-surface-700/50 rounded-xl text-surface-900 dark:text-white placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark-glow-focus transition-all"
           />
           {searchQuery && (
             <button

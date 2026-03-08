@@ -46,8 +46,8 @@ const MessageBubble = ({ message, isOwn, isFirstInGroup, isLastInGroup }) => {
       <div
         className={`relative max-w-[75%] sm:max-w-[65%] px-4 py-2.5 ${
           isOwn
-            ? 'bg-primary-600 text-white rounded-message-sent'
-            : 'bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 rounded-message-received shadow-sm dark:shadow-none'
+            ? 'message-bubble-sent'
+            : 'bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 rounded-message-received shadow-sm dark:shadow-none border border-transparent dark:border-surface-700/50'
         } ${isLastInGroup ? 'pb-2' : ''}`}
       >
         {/* Message content */}

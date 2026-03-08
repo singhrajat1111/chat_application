@@ -13,7 +13,7 @@ const Chat = () => {
   }, [fetchConversations]);
 
   return (
-    <div className="h-screen flex bg-surface-50 dark:bg-surface-950">
+    <div className="h-screen flex bg-surface-50 dark:bg-surface-950 dark-gradient-bg">
       {/* Sidebar - hidden on mobile when a conversation is selected */}
       <div className={`${currentConversation ? 'hidden lg:flex' : 'flex'} w-full lg:w-80 flex-shrink-0`}>
         <Sidebar />
