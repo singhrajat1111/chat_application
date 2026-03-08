@@ -3,18 +3,19 @@ import { v4 as uuidv4 } from 'uuid';
 
 class MessageService {
   // Create new message (transactional: insert message + update conversation timestamp)
-  async createMessage(conversationId, senderId, content) {
+  async createMessage(conversationId, senderId, content, mediaOptions = {}) {
     const client = await getClient();
     try {
       await client.query('BEGIN');
 
       const messageId = uuidv4();
+      const { messageType = 'text', mediaUrl = null, fileName = null, fileSize = null, mimeType = null } = mediaOptions;
       
       const result = await client.query(
-        `INSERT INTO messages (id, conversation_id, sender_id, content, status)
-         VALUES ($1, $2, $3, $4, 'sent')
-         RETURNING id, conversation_id, sender_id, content, status, created_at`,
-        [messageId, conversationId, senderId, content]
+        `INSERT INTO messages (id, conversation_id, sender_id, content, message_type, media_url, file_name, file_size, mime_type, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'sent')
+         RETURNING id, conversation_id, sender_id, content, message_type, media_url, file_name, file_size, mime_type, status, created_at`,
+        [messageId, conversationId, senderId, content || null, messageType, mediaUrl, fileName, fileSize, mimeType]
       );
 
       // Update conversation updated_at atomically
@@ -31,6 +32,11 @@ class MessageService {
         conversationId: message.conversation_id,
         senderId: message.sender_id,
         content: message.content,
+        messageType: message.message_type,
+        mediaUrl: message.media_url,
+        fileName: message.file_name,
+        fileSize: message.file_size ? Number(message.file_size) : null,
+        mimeType: message.mime_type,
         status: message.status,
         createdAt: message.created_at,
       };
@@ -61,6 +67,11 @@ class MessageService {
           m.conversation_id,
           m.sender_id,
           m.content,
+          m.message_type,
+          m.media_url,
+          m.file_name,
+          m.file_size,
+          m.mime_type,
           m.status,
           m.created_at,
           u.username as sender_username
@@ -78,6 +89,11 @@ class MessageService {
         senderId: row.sender_id,
         senderUsername: row.sender_username,
         content: row.content,
+        messageType: row.message_type,
+        mediaUrl: row.media_url,
+        fileName: row.file_name,
+        fileSize: row.file_size ? Number(row.file_size) : null,
+        mimeType: row.mime_type,
         status: row.status,
         createdAt: row.created_at,
       })).reverse(); // Return in chronological order
@@ -114,13 +130,29 @@ class MessageService {
         };
       }
 
+      // Only allow forward status transitions: sent → delivered → seen
       const result = await query(
         `UPDATE messages 
          SET status = $1, updated_at = CURRENT_TIMESTAMP
          WHERE id = $2
+           AND CASE 
+             WHEN $1 = 'delivered' THEN status = 'sent'
+             WHEN $1 = 'seen' THEN status IN ('sent', 'delivered')
+             ELSE false
+           END
          RETURNING id, conversation_id, sender_id, content, status, created_at`,
         [status, messageId]
       );
+
+      // No rows updated = status already at or past the requested level
+      if (result.rows.length === 0) {
+        return {
+          id: message.id,
+          conversationId: message.conversation_id,
+          senderId: message.sender_id,
+          status,
+        };
+      }
 
       const updated = result.rows[0];
       return {

@@ -1,6 +1,8 @@
 import redisService from '../config/redis.js';
 import conversationService from '../services/conversationService.js';
 import logger from '../utils/logger.js';
+import { isValidUUID } from '../utils/validation.js';
+import { cleanupSocket } from '../utils/socketRateLimit.js';
 
 export const setupPresenceHandlers = (io, socket) => {
   const userId = socket.user.id;
@@ -12,18 +14,13 @@ export const setupPresenceHandlers = (io, socket) => {
   // Broadcast presence only to users who share a conversation with this user
   const broadcastPresence = async (event) => {
     try {
-      const conversations = await conversationService.getUserConversations(userId);
-      const notifiedIds = new Set();
-      for (const conv of conversations) {
-        const otherId = conv.otherUser?.id;
-        if (otherId && !notifiedIds.has(otherId)) {
-          notifiedIds.add(otherId);
-          io.to(`user:${otherId}`).emit(event, {
-            userId,
-            username,
-            timestamp: new Date().toISOString(),
-          });
-        }
+      const partnerIds = await conversationService.getConversationPartnerIds(userId);
+      for (const partnerId of partnerIds) {
+        io.to(`user:${partnerId}`).emit(event, {
+          userId,
+          username,
+          timestamp: new Date().toISOString(),
+        });
       }
     } catch (error) {
       logger.error('Error broadcasting presence:', error.message);
@@ -55,6 +52,7 @@ export const setupPresenceHandlers = (io, socket) => {
   // Handle disconnect
   socket.on('disconnect', async (reason) => {
     logger.debug(`User ${username} disconnected: ${reason}`);
+    cleanupSocket(socket.id);
     await setOffline();
   });
 
@@ -63,14 +61,19 @@ export const setupPresenceHandlers = (io, socket) => {
     await setOffline();
   });
 
-  // Get online users (for client to know who's online)
+  // Get online users (filtered to users sharing conversations with requester)
   socket.on('presence:getOnline', async (callback) => {
     try {
       const onlineUsers = await redisService.getOnlineUsers();
+      const allOnlineIds = Object.keys(onlineUsers);
+      // Only return users who share a conversation with the requester
+      const partnerIds = await conversationService.getConversationPartnerIds(userId);
+      const partnerSet = new Set(partnerIds);
+      const filteredOnline = allOnlineIds.filter(id => partnerSet.has(id));
       if (callback) {
         callback({ 
           success: true, 
-          onlineUsers: Object.keys(onlineUsers) 
+          onlineUsers: filteredOnline 
         });
       }
     } catch (error) {
@@ -83,6 +86,10 @@ export const setupPresenceHandlers = (io, socket) => {
   socket.on('presence:check', async (data, callback) => {
     try {
       const { userId: checkUserId } = data;
+      if (!checkUserId || !isValidUUID(checkUserId)) {
+        if (callback) callback({ error: 'Invalid user ID' });
+        return;
+      }
       const isOnline = await redisService.isUserOnline(checkUserId);
       if (callback) {
         callback({ success: true, userId: checkUserId, isOnline });

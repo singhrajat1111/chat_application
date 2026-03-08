@@ -7,29 +7,11 @@ const SALT_ROUNDS = 12;
 class AuthService {
   // Register new user
   async register(username, email, password) {
+    // Hash password before attempting insert
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
     try {
-      // Check if username exists
-      const existingUsername = await query(
-        'SELECT id FROM users WHERE username = $1',
-        [username]
-      );
-      if (existingUsername.rows.length > 0) {
-        throw new Error('Username already taken');
-      }
-
-      // Check if email exists
-      const existingEmail = await query(
-        'SELECT id FROM users WHERE email = $1',
-        [email]
-      );
-      if (existingEmail.rows.length > 0) {
-        throw new Error('Email already registered');
-      }
-
-      // Hash password
-      const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-
-      // Create user
+      // Atomic insert — rely on UNIQUE constraints to prevent duplicates
       const result = await query(
         `INSERT INTO users (username, email, password_hash) 
          VALUES ($1, $2, $3) 
@@ -50,6 +32,16 @@ class AuthService {
         token,
       };
     } catch (error) {
+      // Handle unique constraint violations without leaking DB internals
+      if (error.code === '23505') {
+        if (error.constraint?.includes('username')) {
+          throw new Error('Username already taken');
+        }
+        if (error.constraint?.includes('email')) {
+          throw new Error('Email already registered');
+        }
+        throw new Error('Username or email already taken');
+      }
       throw error;
     }
   }
@@ -112,13 +104,15 @@ class AuthService {
   // Search users by username
   async searchUsers(searchQuery, currentUserId, limit = 20) {
     try {
+      // Escape LIKE wildcards to prevent pattern-based enumeration
+      const escaped = searchQuery.replace(/[%_\\]/g, '\\$&');
       const result = await query(
-        `SELECT id, username, email, created_at 
+        `SELECT id, username, created_at 
          FROM users 
          WHERE username ILIKE $1 AND id != $2
          ORDER BY username
          LIMIT $3`,
-        [`%${searchQuery}%`, currentUserId, limit]
+        [`%${escaped}%`, currentUserId, limit]
       );
 
       return result.rows;

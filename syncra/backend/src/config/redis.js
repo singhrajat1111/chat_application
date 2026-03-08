@@ -192,6 +192,56 @@ class RedisService {
     if (this.subscriber) await this.subscriber.quit();
     this.isConnected = false;
   }
+
+  // ---- Participant cache (Redis-backed, scales across instances) ----
+
+  // Cache that a user is a participant in a conversation (TTL 5 min)
+  async cacheParticipant(conversationId, userId) {
+    if (!this.isConnected) return;
+    try {
+      await this.client.set(`participant:${conversationId}:${userId}`, '1', { EX: 300 });
+    } catch (error) {
+      console.error('Error caching participant:', error);
+    }
+  }
+
+  // Check if participant membership is cached
+  async isParticipantCached(conversationId, userId) {
+    if (!this.isConnected) return null; // null = cache miss
+    try {
+      const val = await this.client.get(`participant:${conversationId}:${userId}`);
+      return val === '1' ? true : null; // true = confirmed, null = cache miss
+    } catch (error) {
+      console.error('Error checking participant cache:', error);
+      return null;
+    }
+  }
+
+  // Cache conversation participants list (TTL 5 min)
+  async cacheParticipants(conversationId, participants) {
+    if (!this.isConnected) return;
+    try {
+      await this.client.set(
+        `participants:${conversationId}`,
+        JSON.stringify(participants),
+        { EX: 300 }
+      );
+    } catch (error) {
+      console.error('Error caching participants:', error);
+    }
+  }
+
+  // Get cached participants list
+  async getCachedParticipants(conversationId) {
+    if (!this.isConnected) return null;
+    try {
+      const val = await this.client.get(`participants:${conversationId}`);
+      return val ? JSON.parse(val) : null;
+    } catch (error) {
+      console.error('Error getting cached participants:', error);
+      return null;
+    }
+  }
 }
 
 // Singleton instance

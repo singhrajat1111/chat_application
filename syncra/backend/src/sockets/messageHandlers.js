@@ -3,23 +3,31 @@ import conversationService from '../services/conversationService.js';
 import redisService from '../config/redis.js';
 import logger from '../utils/logger.js';
 import { isValidUUID, sanitizeContent, MAX_MESSAGE_LENGTH } from '../utils/validation.js';
+import { createSocketRateLimiter, cleanupSocket } from '../utils/socketRateLimit.js';
 
-// In-memory participant cache to avoid DB hit on every socket event
-// Key: `${conversationId}:${userId}`, Value: timestamp
-const participantCache = new Map();
-const PARTICIPANT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// Rate limiters: messages = 30/min, typing = 60/min, status updates = 60/min
+const messageLimit = createSocketRateLimiter(30, 60_000);
+const typingLimit = createSocketRateLimiter(60, 60_000);
+const statusLimit = createSocketRateLimiter(60, 60_000);
 
+// Redis-backed participant cache (scales across instances)
 const isParticipantCached = async (conversationId, userId) => {
-  const key = `${conversationId}:${userId}`;
-  const cached = participantCache.get(key);
-  if (cached && Date.now() - cached < PARTICIPANT_CACHE_TTL) {
-    return true;
-  }
+  const cached = await redisService.isParticipantCached(conversationId, userId);
+  if (cached === true) return true;
   const result = await conversationService.isParticipant(conversationId, userId);
   if (result) {
-    participantCache.set(key, Date.now());
+    await redisService.cacheParticipant(conversationId, userId);
   }
   return result;
+};
+
+// Get participants with Redis cache
+const getParticipantsCached = async (conversationId) => {
+  const cached = await redisService.getCachedParticipants(conversationId);
+  if (cached) return cached;
+  const participants = await conversationService.getConversationParticipants(conversationId);
+  await redisService.cacheParticipants(conversationId, participants);
+  return participants;
 };
 
 export const setupMessageHandlers = (io, socket) => {
@@ -28,6 +36,11 @@ export const setupMessageHandlers = (io, socket) => {
   // Handle sending a message
   socket.on('message:send', async (data, callback) => {
     try {
+      if (!messageLimit(socket, 'message:send')) {
+        if (callback) callback({ error: 'Too many messages, slow down' });
+        return;
+      }
+
       const { conversationId, content } = data;
 
       if (!conversationId || !isValidUUID(conversationId)) {
@@ -61,7 +74,7 @@ export const setupMessageHandlers = (io, socket) => {
       );
 
       // Get conversation participants
-      const participants = await conversationService.getConversationParticipants(
+      const participants = await getParticipantsCached(
         conversationId
       );
 
@@ -74,6 +87,11 @@ export const setupMessageHandlers = (io, socket) => {
         content: message.content,
         status: message.status,
         createdAt: message.createdAt,
+        messageType: message.messageType || 'text',
+        mediaUrl: message.mediaUrl || null,
+        fileName: message.fileName || null,
+        fileSize: message.fileSize || null,
+        mimeType: message.mimeType || null,
       };
 
       // Emit to all participants in the conversation
@@ -107,6 +125,11 @@ export const setupMessageHandlers = (io, socket) => {
   // Handle message delivered
   socket.on('message:delivered', async (data, callback) => {
     try {
+      if (!statusLimit(socket, 'message:delivered')) {
+        if (callback) callback({ error: 'Too many requests' });
+        return;
+      }
+
       const { messageId, conversationId } = data;
 
       if (!messageId || !conversationId || !isValidUUID(messageId) || !isValidUUID(conversationId)) {
@@ -122,7 +145,7 @@ export const setupMessageHandlers = (io, socket) => {
       );
 
       // Notify the sender that the message was delivered
-      const participants = await conversationService.getConversationParticipants(
+      const participants = await getParticipantsCached(
         conversationId
       );
 
@@ -145,6 +168,11 @@ export const setupMessageHandlers = (io, socket) => {
   // Handle message seen
   socket.on('message:seen', async (data, callback) => {
     try {
+      if (!statusLimit(socket, 'message:seen')) {
+        if (callback) callback({ error: 'Too many requests' });
+        return;
+      }
+
       const { conversationId } = data;
 
       if (!conversationId || !isValidUUID(conversationId)) {
@@ -160,7 +188,7 @@ export const setupMessageHandlers = (io, socket) => {
 
       if (messageIds.length > 0) {
         // Get conversation participants
-        const participants = await conversationService.getConversationParticipants(
+        const participants = await getParticipantsCached(
           conversationId
         );
 
@@ -186,6 +214,8 @@ export const setupMessageHandlers = (io, socket) => {
   // Handle typing start
   socket.on('typing:start', async (data) => {
     try {
+      if (!typingLimit(socket, 'typing')) return;
+
       const { conversationId } = data;
       if (!conversationId || !isValidUUID(conversationId)) return;
 
@@ -219,7 +249,7 @@ const broadcastTypingStatus = async (io, conversationId, excludeUserId) => {
   try {
     const typingUserIds = await redisService.getTypingUsers(conversationId);
 
-    const participants = await conversationService.getConversationParticipants(
+    const participants = await getParticipantsCached(
       conversationId
     );
 

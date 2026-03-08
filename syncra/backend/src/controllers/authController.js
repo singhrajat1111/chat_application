@@ -32,6 +32,12 @@ class AuthController {
         });
       }
 
+      if (password.length > 128) {
+        return res.status(400).json({ 
+          error: 'Password cannot exceed 128 characters' 
+        });
+      }
+
       if (!isValidEmail(email)) {
         return res.status(400).json({ error: 'Invalid email format' });
       }

@@ -56,7 +56,13 @@ const ConversationItem = ({ conversation, isActive, onClick, isOnline }) => {
                 <span className="text-surface-400 dark:text-surface-500">
                   {lastMessage.senderId === otherUser?.id ? '' : 'You: '}
                 </span>
-                {truncateText(lastMessage.content, 30)}
+                {lastMessage.messageType === 'image'
+                  ? '📷 Photo'
+                  : lastMessage.messageType === 'video'
+                  ? '🎥 Video'
+                  : lastMessage.messageType === 'document'
+                  ? '📄 Document'
+                  : truncateText(lastMessage.content, 30)}
               </>
             ) : (
               <span className="text-surface-400 dark:text-surface-500 italic">

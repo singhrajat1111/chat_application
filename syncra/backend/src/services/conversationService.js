@@ -67,38 +67,42 @@ class ConversationService {
           c.id,
           c.created_at,
           c.updated_at,
-          (
-            SELECT json_build_object(
-              'id', u.id,
-              'username', u.username,
-              'email', u.email
-            )
-            FROM users u
-            JOIN conversation_participants cp2 ON u.id = cp2.user_id
-            WHERE cp2.conversation_id = c.id AND cp2.user_id != $1
-            LIMIT 1
+          json_build_object(
+            'id', ou.id,
+            'username', ou.username
           ) as other_user,
-          (
-            SELECT json_build_object(
-              'id', m.id,
-              'content', m.content,
-              'status', m.status,
-              'createdAt', m.created_at,
-              'senderId', m.sender_id
+          CASE WHEN lm.id IS NOT NULL THEN
+            json_build_object(
+              'id', lm.id,
+              'content', lm.content,
+              'status', lm.status,
+              'createdAt', lm.created_at,
+              'senderId', lm.sender_id,
+              'messageType', lm.message_type
             )
-            FROM messages m
-            WHERE m.conversation_id = c.id
-            ORDER BY m.created_at DESC
-            LIMIT 1
-          ) as last_message,
-          (
-            SELECT COUNT(*)
-            FROM messages m
-            WHERE m.conversation_id = c.id AND m.sender_id != $1 AND m.status != 'seen'
-          ) as unread_count
+          ELSE NULL END as last_message,
+          COALESCE(uc.cnt, 0) as unread_count
         FROM conversations c
-        JOIN conversation_participants cp ON c.id = cp.conversation_id
-        WHERE cp.user_id = $1
+        JOIN conversation_participants cp ON c.id = cp.conversation_id AND cp.user_id = $1
+        LEFT JOIN LATERAL (
+          SELECT u.id, u.username
+          FROM users u
+          JOIN conversation_participants cp2 ON u.id = cp2.user_id
+          WHERE cp2.conversation_id = c.id AND cp2.user_id != $1
+          LIMIT 1
+        ) ou ON true
+        LEFT JOIN LATERAL (
+          SELECT m.id, m.content, m.status, m.created_at, m.sender_id, m.message_type
+          FROM messages m
+          WHERE m.conversation_id = c.id
+          ORDER BY m.created_at DESC
+          LIMIT 1
+        ) lm ON true
+        LEFT JOIN LATERAL (
+          SELECT COUNT(*) as cnt
+          FROM messages m
+          WHERE m.conversation_id = c.id AND m.sender_id != $1 AND m.status != 'seen'
+        ) uc ON true
         ORDER BY c.updated_at DESC`,
         [userId]
       );
@@ -183,6 +187,32 @@ class ConversationService {
         updatedAt: row.updated_at,
         otherUser: row.other_user,
       };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Lightweight: get IDs of users who share a conversation with this user
+  async getConversationPartnerIds(userId) {
+    try {
+      const result = await query(
+        `SELECT DISTINCT cp2.user_id
+         FROM conversation_participants cp1
+         JOIN conversation_participants cp2 ON cp1.conversation_id = cp2.conversation_id
+         WHERE cp1.user_id = $1 AND cp2.user_id != $1`,
+        [userId]
+      );
+      return result.rows.map(r => r.user_id);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Check if a user exists
+  async userExists(userId) {
+    try {
+      const result = await query('SELECT id FROM users WHERE id = $1', [userId]);
+      return result.rows.length > 0;
     } catch (error) {
       throw error;
     }

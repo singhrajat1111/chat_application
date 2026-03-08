@@ -62,7 +62,9 @@ const io = new Server(httpServer, {
 const PORT = process.env.PORT || 3001;
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 app.use(compression());
 app.use(cors({
   origin: allowedOrigins,
@@ -73,7 +75,7 @@ app.use(express.json({ limit: '1mb' }));
 // Rate limiting
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per window
+  max: 300, // limit each IP to 300 requests per window
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later' },
@@ -113,6 +115,13 @@ app.use('/api/messages', apiLimiter, messageRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
+  // Handle multer errors (file upload issues)
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'File too large' });
+  }
+  if (err.message?.includes('File type') && err.message?.includes('not allowed')) {
+    return res.status(400).json({ error: err.message });
+  }
   logger.error('Unhandled express error:', err.message);
   res.status(err.status || 500).json({ error: 'Internal server error' });
 });

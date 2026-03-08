@@ -27,6 +27,12 @@ class ConversationController {
         return res.status(400).json({ error: 'Cannot create conversation with yourself' });
       }
 
+      // Verify target user exists
+      const targetExists = await conversationService.userExists(userId);
+      if (!targetExists) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
       const result = await conversationService.getOrCreateConversation(
         req.user.id, 
         userId

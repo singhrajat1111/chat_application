@@ -45,8 +45,7 @@ export const generateToken = (user) => {
   return jwt.sign(
     { 
       id: user.id, 
-      username: user.username,
-      email: user.email 
+      username: user.username
     },
     JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }

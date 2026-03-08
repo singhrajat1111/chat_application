@@ -3,6 +3,7 @@ import conversationController from '../controllers/conversationController.js';
 import messageController from '../controllers/messageController.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validateUUIDParam } from '../utils/validation.js';
+import { upload } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -18,6 +19,7 @@ router.get('/:conversationId/participants', validateUUIDParam('conversationId'),
 // Message routes
 router.get('/:conversationId/messages', validateUUIDParam('conversationId'), messageController.getMessages.bind(messageController));
 router.post('/:conversationId/messages', validateUUIDParam('conversationId'), messageController.sendMessage.bind(messageController));
+router.post('/:conversationId/upload', validateUUIDParam('conversationId'), upload.single('file'), messageController.uploadMedia.bind(messageController));
 router.post('/:conversationId/seen', validateUUIDParam('conversationId'), messageController.markConversationAsSeen.bind(messageController));
 
 export default router;

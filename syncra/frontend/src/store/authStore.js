@@ -4,6 +4,18 @@ import { fetchWithTimeout } from '../utils/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
+// Decode JWT payload without a library (base64url → JSON)
+function isTokenExpired(token) {
+  if (!token) return true;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    // Expired if less than 60 seconds remaining
+    return payload.exp * 1000 < Date.now() + 60_000;
+  } catch {
+    return true;
+  }
+}
+
 export const useAuthStore = create(
   persist(
     (set, get) => ({
@@ -96,6 +108,12 @@ export const useAuthStore = create(
         const token = get().token;
         if (!token) return;
 
+        // Auto-logout if token expired
+        if (isTokenExpired(token)) {
+          get().logout();
+          return;
+        }
+
         try {
           const response = await fetchWithTimeout(`${API_URL}/auth/me`, {
             headers: {
@@ -147,12 +165,22 @@ export const useAuthStore = create(
       // Get auth headers for API requests
       getAuthHeaders: () => {
         const token = get().token;
+        if (token && isTokenExpired(token)) {
+          get().logout();
+          return {};
+        }
         return token ? { Authorization: `Bearer ${token}` } : {};
       },
     }),
     {
       name: 'syncra-auth',
       partialize: (state) => ({ user: state.user, token: state.token, isAuthenticated: state.isAuthenticated }),
+      onRehydrateStorage: () => (state) => {
+        // Auto-logout if rehydrated token is expired
+        if (state?.token && isTokenExpired(state.token)) {
+          state.logout();
+        }
+      },
     }
   )
 );

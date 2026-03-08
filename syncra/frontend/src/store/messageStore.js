@@ -190,6 +190,17 @@ export const useMessageStore = create((set, get) => ({
     get().setTypingUsers(conversationId, typingUsers);
   },
 
+  // Remove a message (e.g. failed optimistic message)
+  removeMessage: (conversationId, messageId) =>
+    set((state) => ({
+      messages: {
+        ...state.messages,
+        [conversationId]: (state.messages[conversationId] || []).filter(
+          (m) => m.id !== messageId
+        ),
+      },
+    })),
+
   // Clear messages for conversation
   clearMessages: (conversationId) => {
     set((state) => {
@@ -197,5 +208,40 @@ export const useMessageStore = create((set, get) => ({
       delete newMessages[conversationId];
       return { messages: newMessages };
     });
+  },
+
+  // Upload media file and create message
+  uploadMedia: async (conversationId, file, caption) => {
+    const token = useAuthStore.getState().token;
+    if (!token) return { success: false, error: 'Not authenticated' };
+
+    const apiUrl = API_URL;
+    const formData = new FormData();
+    formData.append('file', file);
+    if (caption) formData.append('caption', caption);
+
+    try {
+      const response = await fetchWithTimeout(
+        `${apiUrl}/conversations/${conversationId}/upload`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        },
+        60000 // 60s timeout for large files
+      );
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to upload');
+      }
+
+      const data = await response.json();
+      return { success: true, message: data.message };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   },
 }));
