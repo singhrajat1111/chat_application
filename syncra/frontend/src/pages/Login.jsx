@@ -49,7 +49,7 @@ const Login = () => {
 
       {/* Form */}
       <div className="w-full max-w-md">
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-surface-900 rounded-2xl shadow-xl shadow-surface-900/5 dark:shadow-primary-900/10 border border-transparent dark:border-surface-700/50 p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-surface-900 rounded-2xl shadow-xl shadow-surface-900/5 dark:shadow-primary-900/10 border border-surface-200/60 dark:border-surface-700/50 p-8 space-y-6">
           {error && (
             <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
               {error}

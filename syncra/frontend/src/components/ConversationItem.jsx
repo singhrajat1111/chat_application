@@ -9,7 +9,7 @@ const ConversationItem = ({ conversation, isActive, onClick, isOnline }) => {
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left ${
         isActive
           ? 'bg-primary-50 dark:bg-primary-900/20 border border-primary-200/50 dark:border-primary-700/30'
-          : 'hover:bg-surface-100 dark:hover:bg-surface-800/50 border border-transparent'
+          : 'hover:bg-surface-100 dark:hover:bg-surface-800/50'
       }`}
     >
       {/* Avatar */}

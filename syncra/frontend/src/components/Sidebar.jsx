@@ -68,9 +68,9 @@ const Sidebar = () => {
   const showSearchResults = searchQuery.length >= 2;
 
   return (
-    <div className="w-full lg:w-80 h-full bg-white dark:bg-surface-900/95 border-r border-surface-200 dark:border-surface-700/50 flex flex-col backdrop-blur-sm">
+    <div className="w-full lg:w-80 h-full bg-white dark:bg-surface-900/95 border-r border-surface-200 dark:border-surface-700/40 flex flex-col backdrop-blur-sm">
       {/* Header */}
-      <div className="p-4 border-b border-surface-200 dark:border-surface-800">
+      <div className="p-4 border-b border-surface-200 dark:border-surface-700/40">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-600/20">
@@ -97,7 +97,7 @@ const Sidebar = () => {
 
             {showUserMenu && (
                 <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-surface-800 rounded-xl shadow-xl border border-surface-200 dark:border-surface-700/50 py-2 z-50 animate-fade-in">
-                <div className="px-4 py-2 border-b border-surface-200 dark:border-surface-700">
+                <div className="px-4 py-2 border-b border-surface-200 dark:border-surface-700/40">
                   <p className="font-medium text-surface-900 dark:text-white">{user?.username}</p>
                   <p className="text-sm text-surface-500 dark:text-surface-400">{user?.email}</p>
                 </div>
@@ -147,7 +147,7 @@ const Sidebar = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search users..."
-            className="w-full pl-10 pr-4 py-2.5 bg-surface-100 dark:bg-surface-800 border border-transparent dark:border-surface-700/50 rounded-xl text-surface-900 dark:text-white placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark-glow-focus transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-surface-100 dark:bg-surface-800 border border-surface-200/60 dark:border-surface-700/50 rounded-xl text-surface-900 dark:text-white placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark-glow-focus transition-all"
           />
           {searchQuery && (
             <button

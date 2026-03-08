@@ -112,7 +112,7 @@ const ChatArea = () => {
   return (
     <div className="flex-1 flex flex-col bg-surface-50 dark:bg-surface-950 dark-gradient-bg">
       {/* Header */}
-      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-surface-900/95 border-b border-surface-200 dark:border-surface-700/50 backdrop-blur-sm">
+      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-surface-900/95 border-b border-surface-200 dark:border-surface-700/40 backdrop-blur-sm">
         <div className="flex items-center gap-4">
           {/* Back button (mobile) */}
           <button
@@ -207,7 +207,7 @@ const ChatArea = () => {
       </div>
 
       {/* Input area */}
-      <div className="px-4 sm:px-6 lg:px-8 py-4 bg-white dark:bg-surface-900/95 border-t border-surface-200 dark:border-surface-700/50 backdrop-blur-sm">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 bg-white dark:bg-surface-900/95 border-t border-surface-200 dark:border-surface-700/40 backdrop-blur-sm">
         <div className="max-w-3xl mx-auto">
           <form onSubmit={handleSubmit} className="flex items-end gap-3">
             <button
@@ -228,7 +228,7 @@ const ChatArea = () => {
                 onKeyDown={handleKeyDown}
                 onBlur={stopTyping}
                 placeholder="Type a message..."
-                className="w-full px-4 py-3 bg-surface-100 dark:bg-surface-800 border border-transparent dark:border-surface-700/50 rounded-xl text-surface-900 dark:text-white placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark-glow-focus transition-all"
+                className="w-full px-4 py-3 bg-surface-100 dark:bg-surface-800 border border-surface-200/60 dark:border-surface-700/50 rounded-xl text-surface-900 dark:text-white placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark-glow-focus transition-all"
               />
             </div>
 

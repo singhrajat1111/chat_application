@@ -77,14 +77,6 @@
 }
 
 /* Base styles */
-* {
-  border-color: var(--color-surface-200);
-}
-
-.dark * {
-  border-color: var(--color-surface-800);
-}
-
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
