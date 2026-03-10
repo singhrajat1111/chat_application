@@ -1,19 +1,22 @@
 @import "tailwindcss";
 
+/* Use class-based dark mode (toggle .dark on <html>) instead of OS preference */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Custom theme configuration for Syncra */
 @theme {
-  /* Colors - Surface scale (warm dark tones with subtle violet undertone) */
-  --color-surface-50: #f8f9fc;
-  --color-surface-100: #f0f1f8;
-  --color-surface-200: #e1e3ef;
-  --color-surface-300: #c8cbe0;
-  --color-surface-400: #8f93b0;
-  --color-surface-500: #636785;
-  --color-surface-600: #484c66;
-  --color-surface-700: #2e3250;
-  --color-surface-800: #1a1d35;
-  --color-surface-900: #111326;
-  --color-surface-950: #0a0b18;
+  /* Colors - Surface scale (clean slate tones for distinct light/dark modes) */
+  --color-surface-50: #F8FAFC;
+  --color-surface-100: #F1F5F9;
+  --color-surface-200: #E2E8F0;
+  --color-surface-300: #CBD5E1;
+  --color-surface-400: #94A3B8;
+  --color-surface-500: #64748B;
+  --color-surface-600: #475569;
+  --color-surface-700: #334155;
+  --color-surface-800: #1F2937;
+  --color-surface-900: #111827;
+  --color-surface-950: #0B0F19;
 
   /* Primary colors (vibrant violet-indigo) */
   --color-primary-50: #f3f0ff;
@@ -90,7 +93,12 @@ body {
 
 .dark body {
   background-color: var(--color-surface-950);
-  color: var(--color-surface-100);
+  color: var(--color-surface-200);
+}
+
+/* Light mode ambient background */
+.dark-gradient-bg {
+  background-color: var(--color-surface-50);
 }
 
 /* Dark mode ambient background gradient */
@@ -141,14 +149,14 @@ body {
 }
 
 .message-bubble-received {
-  background-color: var(--color-surface-200);
+  background-color: var(--color-surface-100);
   color: var(--color-surface-900);
   border-radius: var(--radius-message-received);
 }
 
 .dark .message-bubble-received {
   background-color: var(--color-surface-800);
-  color: var(--color-surface-100);
+  color: var(--color-surface-200);
 }
 
 /* Gradient button */
