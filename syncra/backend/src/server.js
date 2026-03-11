@@ -20,6 +20,7 @@ import { setupSocketHandlers, subscribeToRedis } from './sockets/index.js';
 import authRoutes from './routes/auth.js';
 import conversationRoutes from './routes/conversations.js';
 import messageRoutes from './routes/messages.js';
+import serverRoutes from './routes/servers.js';
 
 // Validate required environment variables in production
 if (process.env.NODE_ENV === 'production') {
@@ -112,6 +113,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/conversations', apiLimiter, conversationRoutes);
 app.use('/api/messages', apiLimiter, messageRoutes);
+app.use('/api/servers', apiLimiter, serverRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

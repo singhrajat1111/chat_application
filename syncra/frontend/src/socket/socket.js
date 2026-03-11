@@ -3,6 +3,8 @@ import { useAuthStore } from '../store/authStore';
 import { useMessageStore } from '../store/messageStore';
 import { useOnlineStore } from '../store/onlineStore';
 import { useConversationStore } from '../store/conversationStore';
+import { useChannelStore } from '../store/channelStore';
+import { useServerStore } from '../store/serverStore';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
 const isDev = import.meta.env.DEV;
@@ -92,6 +94,59 @@ class SocketService {
       useMessageStore.getState().handleTypingUpdate(data);
     });
 
+    // Channel message events
+    this.socket.on('channel:message:new', (data) => {
+      useChannelStore.getState().addMessage(data.channelId || data.channel_id, data);
+    });
+
+    this.socket.on('message:edited', (data) => {
+      const channelId = data.channelId || data.channel_id;
+      useChannelStore.getState().updateMessage(channelId, data.messageId || data.id, {
+        content: data.content,
+        isEdited: true,
+        is_edited: true,
+      });
+    });
+
+    this.socket.on('message:deleted', (data) => {
+      const channelId = data.channelId || data.channel_id;
+      useChannelStore.getState().markMessageDeleted(channelId, data.messageId || data.id);
+    });
+
+    // Channel typing events
+    this.socket.on('channel:typing:update', (data) => {
+      const channelId = data.channelId || data.channel_id;
+      if (data.isTyping || data.is_typing) {
+        useChannelStore.getState().setTypingUser(channelId, data.userId || data.user_id, data.username, true);
+      } else {
+        useChannelStore.getState().setTypingUser(channelId, data.userId || data.user_id, data.username, false);
+      }
+    });
+
+    // Reaction events
+    this.socket.on('message:reaction:added', (data) => {
+      const channelId = data.channelId || data.channel_id;
+      useChannelStore.getState().addReaction(channelId, data.messageId || data.message_id, {
+        emoji: data.emoji,
+        userId: data.userId || data.user_id,
+        username: data.username,
+      });
+    });
+
+    this.socket.on('message:reaction:removed', (data) => {
+      const channelId = data.channelId || data.channel_id;
+      useChannelStore.getState().removeReaction(channelId, data.messageId || data.message_id, data.emoji, data.userId || data.user_id);
+    });
+
+    // Server member events
+    this.socket.on('server:member:joined', (data) => {
+      useServerStore.getState().fetchMembers(data.serverId || data.server_id);
+    });
+
+    this.socket.on('server:member:left', (data) => {
+      useServerStore.getState().fetchMembers(data.serverId || data.server_id);
+    });
+
     this.socket.on('error', (error) => {
       console.error('Socket error:', error);
     });
@@ -159,6 +214,30 @@ class SocketService {
       this.socket = null;
       this.isConnected = false;
     }
+  }
+
+  // Join a server room
+  joinServer(serverId) {
+    if (!this.isConnected) return;
+    this.socket.emit('server:join', { serverId });
+  }
+
+  // Leave a server room
+  leaveServer(serverId) {
+    if (!this.isConnected) return;
+    this.socket.emit('server:leave', { serverId });
+  }
+
+  // Join a channel room
+  joinChannel(channelId) {
+    if (!this.isConnected) return;
+    this.socket.emit('channel:join', { channelId });
+  }
+
+  // Leave a channel room
+  leaveChannel(channelId) {
+    if (!this.isConnected) return;
+    this.socket.emit('channel:leave', { channelId });
   }
 
   // Reconnect with new token
