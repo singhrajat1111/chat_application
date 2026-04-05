@@ -6,20 +6,31 @@ class RedisService {
     this.publisher = null;
     this.subscriber = null;
     this.isConnected = false;
+    this.isDisabled = false;
   }
 
   async connect() {
+    if (this.isDisabled) return false;
+
     try {
       let config;
+      const socketConfig = {
+        reconnectStrategy: false,
+        connectTimeout: 5000,
+      };
 
       // Support REDIS_URL (common in managed Redis: Railway, Render, Heroku)
       if (process.env.REDIS_URL) {
-        config = { url: process.env.REDIS_URL };
+        config = {
+          url: process.env.REDIS_URL,
+          socket: socketConfig,
+        };
       } else {
         config = {
           socket: {
             host: process.env.REDIS_HOST || 'localhost',
             port: process.env.REDIS_PORT || 6379,
+            ...socketConfig,
           },
         };
 
@@ -36,9 +47,14 @@ class RedisService {
       this.subscriber = createClient(config);
 
       // Error handlers
-      this.client.on('error', (err) => console.error('Redis Client Error:', err));
-      this.publisher.on('error', (err) => console.error('Redis Publisher Error:', err));
-      this.subscriber.on('error', (err) => console.error('Redis Subscriber Error:', err));
+      const handleRedisError = (label) => (err) => {
+        if (this.isConnected || !this.isDisabled) {
+          console.error(`${label}:`, err.message);
+        }
+      };
+      this.client.on('error', handleRedisError('Redis Client Error'));
+      this.publisher.on('error', handleRedisError('Redis Publisher Error'));
+      this.subscriber.on('error', handleRedisError('Redis Subscriber Error'));
 
       // Connect all clients
       await this.client.connect();
@@ -49,7 +65,9 @@ class RedisService {
       console.log('Redis connected successfully');
       return true;
     } catch (error) {
-      console.error('Redis connection failed:', error);
+      console.warn('Redis connection failed, continuing without Redis:', error.message);
+      await this.disconnect(true);
+      this.isDisabled = true;
       this.isConnected = false;
       return false;
     }
@@ -186,10 +204,23 @@ class RedisService {
   }
 
   // Disconnect all clients
-  async disconnect() {
-    if (this.client) await this.client.quit();
-    if (this.publisher) await this.publisher.quit();
-    if (this.subscriber) await this.subscriber.quit();
+  async disconnect(silent = false) {
+    const closeClient = async (client) => {
+      if (!client?.isOpen) return;
+      await client.quit();
+    };
+
+    try {
+      await closeClient(this.client);
+      await closeClient(this.publisher);
+      await closeClient(this.subscriber);
+    } catch (error) {
+      if (!silent) throw error;
+    }
+
+    this.client = null;
+    this.publisher = null;
+    this.subscriber = null;
     this.isConnected = false;
   }
 
